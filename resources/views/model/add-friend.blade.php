@@ -4,7 +4,7 @@
 <div class="invite_model_box">
     <div>
         <div class="friend_name" style="line-height: 1.5; font-size: 24px">Add Friend</div>
-        <div class="friend_invite_text">Invite friends and see each other’s shows.</div>
+        <div class="friend_invite_text">{{$text}}</div>
     </div>
     <div class="invite_input_box">
         <div>
@@ -15,15 +15,16 @@
         </div>
     </div>
     <div>
-    <button class="add_friend_ btn_bg_gray ">Share invite</button>
+    <button class="add_friend_ btn_bg_gray ">Generate invite link</button>
     </div>
+    <div class="guide_text" style="font-weight: 500;font-size: 12px;color: #A1A1A1;text-align:center;" ></div>
 </div>
 @endsection
 @section('model_script')
 <script>
 
     $(document).ready(function () {
-       
+        const id = {{Auth::user()->id }};
         function checkInvite(){
                 var $firstName= $('#first_name').val().trim();
                 var $lastName = $('#last_name').val().trim();
@@ -48,11 +49,45 @@
             document.execCommand('copy');     // Copy to clipboard
             tempInput.remove();               // Remove the textarea
             }
+            // generate unique random string
+            function generateUniqueString() {
+                const randomPart = Math.random().toString(36).substring(2, 15) + 
+                                Math.random().toString(36).substring(2, 15);
+                const timestamp = Date.now().toString(36); // current time in ms
+                return randomPart + timestamp;
+            }
+
             $(document).on('click', '.shareInvitation' , function(){
                 var firstName= $('#first_name').val().trim();
-                var text = `Hey ${firstName}, I’m using Pinyotta to discover TV shows and I wanted to invite you to be a friend so we can share shows we love with each other!`;
+                var lastName = $('#last_name').val().trim();
+                var  string = generateUniqueString();
+                // Hey ${firstName},
+                var shareText = '{{$shareText}}';
+                var text = `${shareText}\nhttps://pinyotta.com?fid=${string}`;
                 copyToClipboard(text);
-                $(this).html('Invitation copied to clipboard!');
+                $(this).html('Invitation link copied to clipboard!');
+                $('.guide_text').html('Share the link with ' + firstName );
+                
+                $.ajax({
+                    type: "post",
+                    url: "{{route('saveInvitations')}}",
+                    data: {
+                        name: firstName + " " + lastName,
+                        id: id,
+                        invite_token : string,
+                        _token: '{{csrf_token()}}'
+                    },
+                    success: function (response) {
+                        // setTimeout(() => {
+                        //     goBack(); 
+                        // }, 2000);
+                        $('.add_friend_').removeClass('shareInvitation');
+                        $('.add_friend_').on('click',function(){
+                            copyToClipboard(text);
+                        });
+                    }
+                });
+
             });
         
     });
