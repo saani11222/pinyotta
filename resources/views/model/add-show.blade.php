@@ -1,6 +1,9 @@
+
 @extends('layout.model')
 
 @section('model_content')
+
+
 <div class="invite_model_box">
     <div>
         <div class="friend_name" style="line-height: 1.5; font-size: 24px">Add a show</div>
@@ -9,12 +12,12 @@
     <div class="search_head">
         <div class="input_search_box">
             <input type="search" id="searchBox" class="search_box" name="" id=""
-                placeholder="Enter the name of a TV show you love">
+                placeholder="Enter the name of a TV show you love" autocomplete="off" >
             <div class="margin_bottom"></div>
             <div id="showResults" class="show_results"></div>
         </div>
     </div>
-    <div><button class="add_friend_ btn_bg_gray ">Add</button></div>
+    <div><button id="addShowInWatchList" class="add_friend_ btn_bg_gray ">Add</button></div>
 </div>
 @endsection
 @section('model_script')
@@ -65,13 +68,13 @@
                     let resultHTML = response.map(item => `
                         <div class='resultBox' >
                             <div class = 'resultBoxItem' style="display: flex; gap: 8px;cursor:pointer" data-id="${item.show.id}"
-                            data-image="${item.show.image ? item.show.image.medium : '{{ asset('assets/img/No Image.png') }}'}"
+                            data-image="${item.show.image ? item.show.image.medium : '{{asset('assets/img/No Image.png') }}'}"
                             data-name = "${item.show.name}"
-                            >
-                                <img height="40px" src="${item.show.image ? item.show.image.medium : '{{ asset('assets/img/No Image.png') }}'}">
+                            data-genres = "${ item.show.premiered ? item.show.premiered.split('-')[0] : 'N/A' }${item.show.genres?.length ? ', ' : ''}${ item.show.genres.join(", ") }">
+                                <img height="40px" src="${item.show.image ? item.show.image.medium : '{{asset('assets/img/No Image.png') }}'}">
                                     <div style="font-weight: 500; font-size: 14px; line-height: 100%;display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px;">${item.show.name}
                                         <div>
-                                        <span style="color:#7B7F83; font-weight:600; font-size:11px; line-height: 100%;">${item.show.premiered ? item.show.premiered.split('-')[0] : 'N/A'},</span>
+                                        <span style="color:#7B7F83; font-weight:600; font-size:11px; line-height: 100%;">${item.show.premiered ? item.show.premiered.split('-')[0] : 'N/A'}${item.show.genres?.length ? ',' : ''}</span>
                                         <span style="color:#7B7F83; font-weight:600; font-size:11px; line-height: 100%;">${item.show.genres.join(", ")}</span>
                                     </div>
                                 </div>
@@ -117,6 +120,7 @@
         var id = $this.data('id');
         var image = $this.data('image');
         var name = $this.data('name');
+        var genres = $this.data('genres');
         let element = $('#selected_item_box' + id); 
         if (element.length) {  
             element.remove();
@@ -126,11 +130,12 @@
             <div class="selected_item_box" id="selected_item_box${id}" >
                     <img height="60px" src="${image}" alt="">
                     <div class="itemBox">
-                        <div class="item_name">${name}</div>
-                        <div><img  width="10px" height="10px" class="removeselectedItem" id="removeSelection${id}" data-id='${id}' src="{{asset('assets/img/x.png')}}"alt="" style="cursor: pointer"></div>
+                        <div class="item_name substr_text">${name}</div>
+                        <div class="action_anchr removeselectedItem" data-id='${id}' ><img  width="10px" height="10px"  id="removeSelection${id}" src="{{asset('assets/img/x.png')}}"alt="" style="cursor: pointer"></div>
                         <input type="hidden" name="item_id" value = "${id}">
-                        <input type="hidden" name="item_name" value = "${image}">
-                        <input type="hidden" name="item_image" value = "${name}">
+                        <input type="hidden" name="item_name" value = "${name}">
+                        <input type="hidden" name="item_image" value = "${image}">
+                        <input type="hidden" name="genres" value="${genres}">
                     </div>
             </div>
         </form>
@@ -138,6 +143,7 @@
         $('#searchBox').val('');
         $("#showResults").html("");
         RemoveCss();
+        checkShowBoxCount();
         selectedIndex = -1; 
     });
 
@@ -163,6 +169,7 @@
             let id = selectedItem.data('id');
             let image = selectedItem.data('image');
             let name = selectedItem.data('name'); 
+            let genres = selectedItem.data('genres'); 
             let element = $('#selected_item_box' + id); 
             if (element.length) {  
                 element.remove();
@@ -172,11 +179,12 @@
                     <div class="selected_item_box" id="selected_item_box${id}" >
                             <img height="60px" src="${image}" alt="">
                             <div class="itemBox">
-                                <div class="item_name">${name}</div>
-                                <div><img  width="10px" height="10px" class="removeselectedItem" id="removeSelection${id}" data-id='${id}' src="{{asset('assets/img/x.png')}}"alt="" style="cursor: pointer"></div>
+                                <div class="item_name substr_text">${name}</div>
+                                <div class="action_anchr removeselectedItem" data-id='${id}' ><img  width="10px" height="10px"  id="removeSelection${id}"  src="{{asset('assets/img/x.png')}}"alt="" style="cursor: pointer"></div>
                                 <input type="hidden" name="item_id" value = "${id}">
-                                <input type="hidden" name="item_name" value = "${image}">
-                                <input type="hidden" name="item_image" value = "${name}">
+                                <input type="hidden" name="item_name" value = "${name}">
+                                <input type="hidden" name="item_image" value = "${image}">
+                                <input type="hidden" name="genres" value="${genres}">
                             </div>
                     </div>
                 </form>
@@ -184,6 +192,7 @@
             $('#searchBox').val('');
             $("#showResults").html("");
             RemoveCss();
+            checkShowBoxCount();
             selectedIndex = -1; 
             return;
         }
@@ -205,7 +214,6 @@
         var id = $(this).data('id');
         $('#selected_item_box'+id).remove();
         $('.model_content_box').html(`
-        
             <div class="invite_model_box">
                 <div>
                     <div class="friend_name" style="line-height: 1.5; font-size: 24px">Add a show</div>
@@ -214,19 +222,76 @@
                 <div class="search_head">
                     <div class="input_search_box">
                         <input type="search" id="searchBox" class="search_box" name="" id=""
-                            placeholder="Enter the name of a TV show you love">
+                            placeholder="Enter the name of a TV show you love" autocomplete="off" >
                         <div class="margin_bottom"></div>
                         <div id="showResults" class="show_results"></div>
                     </div>
                 </div>
-            <div><button class="add_friend_ btn_bg_gray ">Add</button></div>    
+            <div><button id="addShowInWatchList" class="add_friend_ btn_bg_gray ">Add</button></div>    
             </div>
-            
-            
         `);
-
+        checkShowBoxCount();
     });
 
+    function checkShowBoxCount(){
+        var item =  $('.search_head').find('#selectedShowBox');
+        if (item.length) {
+        $('#addShowInWatchList').addClass('add_into_watch_list btn_bg_blue');
+        $('#addShowInWatchList').removeClass('btn_bg_gray');
+        } else {
+        $('#addShowInWatchList').removeClass('add_into_watch_list btn_bg_blue');
+        $('#addShowInWatchList').addClass('btn_bg_gray');
+        }
+    }
+    $(document).on('click','.add_into_watch_list', function(){
+        $('#addShowInWatchList').addClass('btn_bg_gray');
+        $('#addShowInWatchList').removeClass('add_into_watch_list btn_bg_blue');
+       
+        $('#addShowInWatchList').html('Adding...');
+
+        // return false;
+
+        let formData = new FormData($('#selectedShowBox')[0]);
+        formData.append('_token', '{{csrf_token()}}');
+        $.ajax({
+            type: "post",
+            url: "{{route('save-show-in-shows-i-love')}}",
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+              
+                notyf.success('Successfully Updated');
+                $('.model_content_box').html(`
+                    <div class="invite_model_box">
+                        <div>
+                            <div class="friend_name" style="line-height: 1.5; font-size: 24px">Add a show</div>
+                        </div>
+                        
+                        <div class="search_head">
+                            <div class="input_search_box">
+                                <input type="search" id="searchBox" class="search_box" name="" id=""
+                                    placeholder="Enter the name of a TV show you love" autocomplete="off" >
+                                <div class="margin_bottom"></div>
+                                <div id="showResults" class="show_results"></div>
+                            </div>
+                        </div>
+                    <div><button id="addShowInWatchList" class="add_friend_ btn_bg_gray ">Add</button></div>    
+                    </div>
+                `);
+                checkShowBoxCount();
+                // setTimeout(() => {
+                // window.location.href = '{{route('shows-loved')}}';
+                // }, 2000);
+                
+            },
+            error: function (xhr, status, error) {
+                  
+                    const errorMessage = xhr.responseJSON?.message || 'Failed to update';
+                    notyf.error(errorMessage);
+            }
+        });
+    });
 
 });
 </script>

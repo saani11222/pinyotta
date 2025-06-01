@@ -58,7 +58,12 @@ class User extends Authenticatable
         return $this->hasMany(Show::class, 'user_id');
     }
 
-
+    public function lastShowUpdatedAt()
+    {
+        return $this->shows()
+            ->orderByDesc('id')
+            ->value('updated_at');
+    }
    
 
 
